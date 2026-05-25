@@ -1,0 +1,3 @@
+name,roll_number,email,password,department,year,semester,batch
+John Doe,2116251401001,john.doe@rec.edu.in,REC@12345,CSE,IV,8,2021-2025
+Jane Smith,2116251401002,jane.smith@rec.edu.in,REC@12345,IT,III,6,2022-2026
