@@ -170,23 +170,23 @@ export default function DashboardPage() {
       
       {/* Welcome Toast Notification */}
       {showWelcome && (
-        <div className="fixed bottom-6 right-6 z-50 animate-slide-up">
-          <div className="bg-white border-[3px] border-slate-900 rounded-2xl p-4 pr-12 shadow-[6px_6px_0_0_#0f172a] relative">
+        <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:bottom-6 sm:right-6 z-50 animate-slide-up">
+          <div className="bg-white border-[3px] border-slate-900 rounded-2xl p-4 pr-10 sm:pr-12 shadow-[4px_4px_0_0_#0f172a] sm:shadow-[6px_6px_0_0_#0f172a] relative">
             <button 
               onClick={() => setShowWelcome(false)}
-              className="absolute top-3 right-3 text-slate-400 hover:text-slate-900 transition-colors"
+              className="absolute top-2 right-2 sm:top-3 sm:right-3 text-slate-400 hover:text-slate-900 transition-colors p-1"
             >
               <X className="w-5 h-5" />
             </button>
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-blue-100 border-[3px] border-slate-900 rounded-full flex items-center justify-center shrink-0">
-                <span className="text-xl">👋</span>
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 border-[3px] border-slate-900 rounded-full flex items-center justify-center shrink-0">
+                <span className="text-lg sm:text-xl">👋</span>
               </div>
               <div>
-                <h3 className="font-black text-slate-900 text-lg">
+                <h3 className="font-black text-slate-900 text-base sm:text-lg leading-tight">
                   Welcome back, {userProfile?.name?.split(' ')[0] || 'Student'}!
                 </h3>
-                <p className="text-sm font-bold text-slate-500 mt-0.5">
+                <p className="text-xs sm:text-sm font-bold text-slate-500 mt-0.5">
                   Ready to check your latest results?
                 </p>
               </div>
@@ -197,26 +197,26 @@ export default function DashboardPage() {
 
       {/* Profile Warning Modal */}
       {showProfileWarning && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-white border-[3px] border-slate-900 rounded-2xl p-6 max-w-md w-full shadow-[8px_8px_0_0_#0f172a] relative animate-in zoom-in-95 duration-300">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-12 h-12 bg-rose-100 border-[3px] border-slate-900 rounded-full flex items-center justify-center shrink-0">
-                <AlertCircle className="w-6 h-6 text-rose-600" />
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white border-[3px] border-slate-900 rounded-2xl p-5 sm:p-6 max-w-md w-full shadow-[6px_6px_0_0_#0f172a] sm:shadow-[8px_8px_0_0_#0f172a] relative animate-in zoom-in-95 duration-300 mx-auto">
+            <div className="flex items-center gap-3 sm:gap-4 mb-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-rose-100 border-[3px] border-slate-900 rounded-full flex items-center justify-center shrink-0">
+                <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6 text-rose-600" />
               </div>
               <div>
-                <h3 className="font-black text-slate-900 text-xl">Action Required</h3>
-                <p className="text-sm font-bold text-slate-500">Your profile is incomplete</p>
+                <h3 className="font-black text-slate-900 text-lg sm:text-xl leading-tight">Action Required</h3>
+                <p className="text-xs sm:text-sm font-bold text-slate-500">Your profile is incomplete</p>
               </div>
             </div>
             
-            <p className="text-slate-700 font-medium mb-4">
+            <p className="text-sm sm:text-base text-slate-700 font-medium mb-4">
               Please complete your profile to get the most out of the portal. You are missing:
             </p>
             
             <ul className="space-y-2 mb-6">
               {missingFields.map(field => (
-                <li key={field} className="flex items-center gap-2 text-sm font-bold text-slate-700">
-                  <div className="w-1.5 h-1.5 rounded-full bg-rose-500"></div>
+                <li key={field} className="flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-700">
+                  <div className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0"></div>
                   {field}
                 </li>
               ))}
@@ -226,7 +226,7 @@ export default function DashboardPage() {
               <Link 
                 href="/dashboard/profile"
                 onClick={() => sessionStorage.setItem('hasDismissedProfileWarning', 'true')}
-                className="flex items-center justify-center w-full py-3 bg-amber-400 hover:bg-amber-500 text-slate-900 font-black rounded-xl border-[3px] border-slate-900 transition-all hover:translate-y-[2px] hover:shadow-none shadow-[4px_4px_0_0_#0f172a]"
+                className="flex items-center justify-center w-full py-3 sm:py-3.5 bg-amber-400 hover:bg-amber-500 text-slate-900 font-black rounded-xl border-[3px] border-slate-900 transition-all hover:translate-y-[2px] hover:shadow-none shadow-[4px_4px_0_0_#0f172a] text-sm sm:text-base"
               >
                 Go to Profile Settings
               </Link>
@@ -235,7 +235,7 @@ export default function DashboardPage() {
                   sessionStorage.setItem('hasDismissedProfileWarning', 'true');
                   setShowProfileWarning(false);
                 }}
-                className="flex items-center justify-center w-full py-3 bg-white hover:bg-slate-50 text-slate-600 font-bold rounded-xl border-[3px] border-slate-200 transition-colors"
+                className="flex items-center justify-center w-full py-2.5 sm:py-3 bg-white hover:bg-slate-50 text-slate-600 font-bold rounded-xl border-[3px] border-slate-200 transition-colors text-sm sm:text-base"
               >
                 Remind me later
               </button>
@@ -304,17 +304,17 @@ export default function DashboardPage() {
           <p className="text-xl font-bold text-slate-600">No results published yet.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {results.map((result) => (
             <div 
               key={result.id}
-              className="group rounded-2xl border-[3px] border-slate-900 bg-white p-6 shadow-[6px_6px_0_0_#0f172a] hover:-translate-y-1 hover:shadow-[8px_8px_0_0_#0f172a] transition-all flex flex-col h-full"
+              className="group rounded-2xl border-[3px] border-slate-900 bg-white p-5 sm:p-6 shadow-[4px_4px_0_0_#0f172a] sm:shadow-[6px_6px_0_0_#0f172a] hover:-translate-y-1 hover:shadow-[6px_6px_0_0_#0f172a] sm:hover:shadow-[8px_8px_0_0_#0f172a] transition-all flex flex-col h-full"
             >
-              <div className="flex items-start justify-between mb-6">
-                <div className="h-14 w-14 rounded-xl border-[3px] border-slate-900 bg-blue-50 flex items-center justify-center shrink-0">
-                  <FileCode2 className="h-7 w-7 text-blue-600" />
+              <div className="flex items-start justify-between mb-5 sm:mb-6">
+                <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-xl border-[3px] border-slate-900 bg-blue-50 flex items-center justify-center shrink-0">
+                  <FileCode2 className="h-6 w-6 sm:h-7 sm:w-7 text-blue-600" />
                 </div>
-                <div className={`flex items-center justify-center rounded-lg border-2 px-3 py-1 shrink-0 ${
+                <div className={`flex items-center justify-center rounded-lg border-2 px-2.5 py-1 sm:px-3 shrink-0 ${
                   result.status === 'PENDING' ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-blue-200 bg-blue-50 text-blue-700'
                 }`}>
                   <span className="text-xs font-bold uppercase tracking-wider">
