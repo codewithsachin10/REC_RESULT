@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { 
   LayoutDashboard, 
   FileCheck2, 
@@ -28,6 +29,14 @@ const NAV_ITEMS = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    localStorage.clear();
+    router.push("/login");
+  };
 
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r-[3px] border-slate-900 bg-slate-900 text-white flex flex-col transition-transform sm:translate-x-0 hidden sm:flex">
@@ -71,10 +80,13 @@ export function Sidebar() {
             <span className="text-xs font-medium text-slate-400 truncate">211620104032</span>
           </div>
         </div>
-        <Link href="/login" className="flex w-full items-center gap-3 rounded-xl px-4 py-3 font-semibold text-slate-300 hover:bg-red-500/10 hover:text-red-500 transition-colors">
+        <button 
+          onClick={handleLogout} 
+          className="flex w-full items-center gap-3 rounded-xl px-4 py-3 font-semibold text-slate-300 hover:bg-red-500/10 hover:text-red-500 transition-colors"
+        >
           <LogOut className="h-5 w-5" />
           Logout
-        </Link>
+        </button>
       </div>
     </aside>
   );

@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { 
   LayoutDashboard, 
   UploadCloud, 
@@ -35,6 +36,13 @@ const MENU_ITEMS = [
 
 export function FacultySidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/faculty/login");
+  };
 
   return (
     <div className="flex h-screen w-60 flex-col bg-slate-900 text-white transition-all duration-300 shrink-0 border-r-[3px] border-slate-900 shadow-[4px_0_15px_rgba(0,0,0,0.1)]">
@@ -86,13 +94,13 @@ export function FacultySidebar() {
           <ChevronRight className="h-5 w-5 text-slate-400 font-bold" />
         </div>
         
-        <Link 
-          href="/faculty/login"
+        <button 
+          onClick={handleLogout}
           className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-black text-white bg-slate-800 border-[2px] border-slate-700 hover:bg-red-600 hover:border-red-500 hover:shadow-[4px_4px_0_0_#1e293b] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all"
         >
           <LogOut className="h-4 w-4 font-bold" />
           Logout
-        </Link>
+        </button>
       </div>
     </div>
   );
