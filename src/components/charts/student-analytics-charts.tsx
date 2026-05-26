@@ -40,7 +40,7 @@ export default function StudentAnalyticsCharts({ marksData }: { marksData: any[]
               <Tooltip 
                 contentStyle={{ borderRadius: '12px', border: '3px solid #0f172a', fontWeight: 'bold' }}
                 labelStyle={{ color: '#0f172a', marginBottom: '4px' }}
-                formatter={(value: number) => [`${value} / 300`, 'Total Score']}
+                formatter={(value: any) => [`${value} / 300`, 'Total Score']}
               />
               <Line 
                 type="monotone" 

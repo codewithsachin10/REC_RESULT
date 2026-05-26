@@ -68,7 +68,7 @@ export default function QueryManagementPage() {
       status: q.status || 'pending',
       date: new Date(q.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       description: q.description || '',
-      screenshotUrl: null // Add if you add this column in DB
+      screenshotUrl: undefined
     }));
 
     // Sort by date descending

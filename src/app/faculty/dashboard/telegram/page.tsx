@@ -154,7 +154,7 @@ export default function TelegramDashboard() {
       if (result.success) {
         setBroadcastMessage("");
         clearImage();
-        setSuccessDetails(result.message);
+        setSuccessDetails(result.message || "");
         setShowCelebration(true);
         fireConfetti();
       } else {

@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 export async function sendTelegramNotification(studentId: string, message: string) {
   try {
@@ -28,7 +28,7 @@ export async function sendTelegramNotification(studentId: string, message: strin
         .eq('id', studentId)
         .single();
 
-      if (profile?.email && process.env.RESEND_API_KEY) {
+      if (profile?.email && resend) {
         // Basic HTML email conversion
         const htmlMessage = message.replace(/\n/g, '<br/>');
         
@@ -69,9 +69,26 @@ export async function sendTelegramNotification(studentId: string, message: strin
       return { success: false, error: "Failed to dispatch message to Telegram" };
     }
     
-    return { success: true, via: 'telegram' };
+    return { success: true };
   } catch (err: any) {
     console.error("Telegram notification error:", err);
     return { success: false, error: err.message };
   }
+}
+
+export async function sendTelegramNotificationsBatch(
+  notifications: { studentId: string; score: number }[],
+  subjectName: string,
+  unitLabel: string
+) {
+  // Process all notifications asynchronously on the server
+  notifications.forEach((n, idx) => {
+    setTimeout(() => {
+      sendTelegramNotification(
+        n.studentId,
+        `<b>📊 Result Published</b>\nYour result for <i>${subjectName} - ${unitLabel}</i> is now available.\n\nScore: <b>${n.score}</b>`
+      ).catch(console.error);
+    }, idx * 100); // Stagger by 100ms to respect Telegram rate limits
+  });
+  return { success: true };
 }

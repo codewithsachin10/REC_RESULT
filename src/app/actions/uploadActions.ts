@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server-admin";
 
 export async function createUploadLog(subjectCode: string, subjectName: string, unitKey: string) {
   const supabase = await createClient();
@@ -9,7 +10,8 @@ export async function createUploadLog(subjectCode: string, subjectName: string, 
     throw new Error("Unauthorized: Only faculty can perform this action");
   }
 
-  const { data, error } = await supabase.from('upload_logs').insert({
+  const adminSupabase = createAdminClient();
+  const { data, error } = await adminSupabase.from('upload_logs').insert({
     subject_code: subjectCode,
     subject_name: subjectName,
     unit_key: unitKey
@@ -26,6 +28,7 @@ export async function publishMarksChunk(uploadId: string, subjectCode: string, s
     throw new Error("Unauthorized: Only faculty can perform this action");
   }
   
+  const adminSupabase = createAdminClient();
   const inserts: any[] = [];
   const updates: any[] = [];
   const revisions: any[] = [];
@@ -56,7 +59,7 @@ export async function publishMarksChunk(uploadId: string, subjectCode: string, s
          mark_id: row.dbMarkId,
          student_id: row.dbStudentId,
          previous_score: row.previousScore ?? null,
-         previous_breakdown: row.existingBreakdown ?? null
+         previous_breakdown: row.previousBreakdown ?? null
       });
       
     } else {
@@ -74,7 +77,7 @@ export async function publishMarksChunk(uploadId: string, subjectCode: string, s
 
   if (inserts.length > 0) {
     // Insert them and fetch the generated IDs so we can add to revisions
-    const { data: insertedMarks, error: insErr } = await supabase.from('marks').insert(inserts).select('id, student_id');
+    const { data: insertedMarks, error: insErr } = await adminSupabase.from('marks').insert(inserts).select('id, student_id');
     if (insErr) throw new Error(insErr.message);
     
     if (insertedMarks) {
@@ -91,14 +94,16 @@ export async function publishMarksChunk(uploadId: string, subjectCode: string, s
   }
 
   if (updates.length > 0) {
-    for (const update of updates) {
-      const { id, ...updatePayload } = update;
-      await supabase.from('marks').update(updatePayload).eq('id', id);
-    }
+    await Promise.all(
+      updates.map(update => {
+        const { id, ...updatePayload } = update;
+        return adminSupabase.from('marks').update(updatePayload).eq('id', id);
+      })
+    );
   }
   
   if (revisions.length > 0) {
-     await supabase.from('upload_revisions').insert(revisions);
+     await adminSupabase.from('upload_revisions').insert(revisions);
   }
 
   return { success: true };
@@ -111,29 +116,31 @@ export async function undoUpload(uploadId: string) {
      throw new Error("Unauthorized: Only faculty can perform this action");
    }
    
-   const { data: log, error: logErr } = await supabase.from('upload_logs').select('unit_key').eq('id', uploadId).single();
+   const adminSupabase = createAdminClient();
+   
+   const { data: log, error: logErr } = await adminSupabase.from('upload_logs').select('unit_key').eq('id', uploadId).single();
    if (logErr) throw new Error(logErr.message);
    
    const unitKey = log.unit_key;
    
-   const { data: revisions, error: revErr } = await supabase.from('upload_revisions').select('*').eq('upload_log_id', uploadId);
+   const { data: revisions, error: revErr } = await adminSupabase.from('upload_revisions').select('*').eq('upload_log_id', uploadId);
    if (revErr) throw new Error(revErr.message);
    
    if (!revisions) return { success: true };
    
    for (const rev of revisions) {
       if (rev.previous_score === null) {
-         const { data: markData } = await supabase.from('marks').select('breakdown').eq('id', rev.mark_id).single();
+         const { data: markData } = await adminSupabase.from('marks').select('breakdown').eq('id', rev.mark_id).single();
          let currentBreakdown = markData?.breakdown || {};
          delete currentBreakdown[unitKey];
          
-         await supabase.from('marks').update({
+         await adminSupabase.from('marks').update({
             [unitKey]: null,
             breakdown: currentBreakdown,
             last_upload_id: null
          }).eq('id', rev.mark_id);
       } else {
-         await supabase.from('marks').update({
+         await adminSupabase.from('marks').update({
             [unitKey]: rev.previous_score,
             breakdown: rev.previous_breakdown,
             last_upload_id: null
@@ -141,7 +148,7 @@ export async function undoUpload(uploadId: string) {
       }
    }
    
-   await supabase.from('upload_logs').delete().eq('id', uploadId);
+   await adminSupabase.from('upload_logs').delete().eq('id', uploadId);
    
    return { success: true };
 }
