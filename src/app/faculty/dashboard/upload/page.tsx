@@ -227,7 +227,7 @@ export default function ResultUploadPage() {
       const supabase = createClient();
       const { data: marks } = await supabase.from('marks').select('*').eq('subject_name', activeUpload.subjectName);
       let profileQuery = supabase.from('profiles').select('*').eq('role', 'student');
-      if (activeUpload.department) {
+      if (activeUpload.department && activeUpload.department !== 'ALL') {
         profileQuery = profileQuery.eq('department', activeUpload.department);
       }
       const { data: profiles } = await profileQuery;
@@ -338,54 +338,54 @@ export default function ResultUploadPage() {
     setActiveUpload(prev => prev ? { ...prev, department: deptShort } : null);
   };
 
-  const processFile = (file: File) => {
+  const parseSingleFile = (file: File): Promise<string[][]> => {
+    return new Promise((resolve, reject) => {
+      const isExcel = file.name.endsWith(".xlsx") || file.name.endsWith(".xls");
+      
+      if (isExcel) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const data = e.target?.result;
+            if (!data) throw new Error("Could not read file data");
+            const workbook = XLSX.read(data, { type: "binary" });
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            const jsonData = XLSX.utils.sheet_to_json<any[]>(worksheet, { header: 1 });
+            const rawRows = jsonData.map(row => 
+              (row as any[]).map(val => val === null || val === undefined ? "" : String(val).trim())
+            );
+            resolve(rawRows);
+          } catch (err: any) {
+            reject(err);
+          }
+        };
+        reader.onerror = (err) => reject(err);
+        reader.readAsBinaryString(file);
+      } else {
+        Papa.parse(file, {
+          header: false,
+          skipEmptyLines: true,
+          complete: (results) => resolve(results.data as string[][]),
+          error: (error) => reject(error)
+        });
+      }
+    });
+  };
+
+  const processFiles = async (files: File[]) => {
     setUploadState("parsing");
-    
-    const isExcel = file.name.endsWith(".xlsx") || file.name.endsWith(".xls");
-    
-    if (isExcel) {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        try {
-          const data = e.target?.result;
-          if (!data) throw new Error("Could not read file data");
-          const workbook = XLSX.read(data, { type: "binary" });
-          const firstSheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[firstSheetName];
-          // Convert sheet to 2D string array
-          const jsonData = XLSX.utils.sheet_to_json<any[]>(worksheet, { header: 1 });
-          
-          // Map values to string to ensure same type as Papa.parse
-          const rawRows = jsonData.map(row => 
-            (row as any[]).map(val => val === null || val === undefined ? "" : String(val).trim())
-          );
-          
-          await asyncValidate(rawRows);
-        } catch (err: any) {
-          console.error(err);
-          setUploadState("idle");
-          alert("Failed to parse Excel file. Please ensure it's a valid worksheet.");
-        }
-      };
-      reader.onerror = (err) => {
-        console.error(err);
-        setUploadState("idle");
-        alert("Failed to read file.");
-      };
-      reader.readAsBinaryString(file);
-    } else {
-      Papa.parse(file, {
-        header: false,
-        skipEmptyLines: true,
-        complete: async (results) => {
-          await asyncValidate(results.data as string[][]);
-        },
-        error: (error) => {
-          console.error(error);
-          setUploadState("idle");
-          alert("Failed to parse file. Please ensure it's a valid CSV.");
-        }
-      });
+    try {
+      const allRows: string[][] = [];
+      for (const file of files) {
+        const rows = await parseSingleFile(file);
+        allRows.push(...rows);
+      }
+      await asyncValidate(allRows);
+    } catch (err: any) {
+      console.error(err);
+      setUploadState("idle");
+      alert("Failed to parse one or more files. Please ensure all files are valid CSV or Excel (.xlsx, .xls).");
     }
   };
   const getLevenshteinDistance = (a: string, b: string): number => {
@@ -650,8 +650,8 @@ export default function ResultUploadPage() {
 
     // 6. EXTRA DATABASE CHECKS
     if (profile && matchStatus !== "Conflict Detected") {
-      // Department verification
-      if (department && profile.department) {
+      // Department verification (skip for bulk/ALL uploads)
+      if (department && department !== 'ALL' && profile.department) {
         if (profile.department.toUpperCase() !== department.toUpperCase()) {
           errors.push(`Department mismatch: Student is in ${profile.department.toUpperCase()}, but you are uploading in ${department.toUpperCase()}.`);
           matchStatus = "Needs Manual Review";
@@ -1035,16 +1035,17 @@ export default function ResultUploadPage() {
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    const file = e.dataTransfer.files[0];
-    if (file && (
+    const droppedFiles = Array.from(e.dataTransfer.files);
+    const validFiles = droppedFiles.filter(file =>
       file.name.endsWith(".csv") || 
       file.name.endsWith(".xlsx") || 
       file.name.endsWith(".xls") || 
       file.type === "text/csv" || 
       file.type === "application/vnd.ms-excel" || 
       file.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )) {
-      processFile(file);
+    );
+    if (validFiles.length > 0) {
+      processFiles(validFiles);
     } else {
       setUploadState("idle");
       alert("Supported formats: CSV and Excel (.xlsx, .xls) files only.");
@@ -1052,8 +1053,8 @@ export default function ResultUploadPage() {
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      processFile(e.target.files[0]);
+    if (e.target.files && e.target.files.length > 0) {
+      processFiles(Array.from(e.target.files));
     }
   };
 
@@ -1314,6 +1315,28 @@ export default function ResultUploadPage() {
           </div>
         </div>
 
+        {/* Upload Bulk Marks Card */}
+        <div 
+          onClick={() => selectDepartment('ALL')}
+          className="cursor-pointer border-[3px] border-slate-900 p-6 rounded-2xl shadow-[4px_4px_0_0_#0f172a] hover:translate-x-[-4px] hover:translate-y-[-4px] hover:shadow-[8px_8px_0_0_#0f172a] transition-all bg-gradient-to-r from-violet-100 via-fuchsia-50 to-orange-50 hover:from-violet-200 hover:via-fuchsia-100 hover:to-orange-100 group"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 bg-gradient-to-br from-violet-500 to-fuchsia-500 border-[3px] border-slate-900 rounded-xl shadow-[3px_3px_0_0_#0f172a] flex items-center justify-center shrink-0">
+              <UploadCloud className="h-7 w-7 text-white" />
+            </div>
+            <div>
+              <h3 className="text-xl font-black text-slate-900">Upload Bulk Marks</h3>
+              <p className="text-sm font-bold text-slate-500 mt-0.5">Mixed departments — upload students from any dept in one file</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4 my-2">
+          <div className="flex-1 h-[3px] bg-slate-200 rounded-full"></div>
+          <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Or select a specific department</span>
+          <div className="flex-1 h-[3px] bg-slate-200 rounded-full"></div>
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {DEPARTMENTS.map((dept) => (
             <div 
@@ -1399,7 +1422,7 @@ export default function ResultUploadPage() {
         </button>
         <div>
           <h2 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-4 flex-wrap">
-            <span>{activeUpload.subjectShort || activeUpload.subjectName} <span className="text-blue-600">—</span> {activeUpload.unitLabel} <span className="text-emerald-600">—</span> {activeUpload.department}</span>
+            <span>{activeUpload.subjectShort || activeUpload.subjectName} <span className="text-blue-600">—</span> {activeUpload.unitLabel} <span className="text-emerald-600">—</span> {activeUpload.department === 'ALL' ? 'All Departments (Bulk)' : activeUpload.department}</span>
             <button
               onClick={() => {
                 const key = `${activeUpload.subjectCode}-${activeUpload.unitKey}`;
@@ -1448,6 +1471,7 @@ export default function ResultUploadPage() {
             <input
               type="file"
               accept=".csv,.xlsx,.xls"
+              multiple
               onChange={handleFileChange}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
             />
@@ -1461,9 +1485,9 @@ export default function ResultUploadPage() {
             </div>
             
             <h3 className="text-2xl font-black text-slate-900 mb-2">
-              {uploadState === "dragging" ? "Drop file to upload" : "Drag and drop your file here"}
+              {uploadState === "dragging" ? "Drop files to upload" : "Drag and drop your files here"}
             </h3>
-            <p className="text-slate-500 font-bold mb-6">Supported formats: CSV and Excel (.xlsx, .xls)</p>
+            <p className="text-slate-500 font-bold mb-6">Supported formats: CSV and Excel (.xlsx, .xls) — multiple files supported</p>
             
             <div className={`border-2 rounded-lg p-3 text-sm font-bold text-left w-full max-w-sm mb-6 ${isPython ? 'bg-emerald-50 border-emerald-900 text-emerald-900' : 'bg-blue-50 border-blue-900 text-blue-900'}`}>
               <span className="font-black">{activeUpload.subjectShort} Format:</span> Roll Number, Total Marks{isPython ? ", MCQ Marks, Coding Q1, Coding Q2, Coding Q3." : "."}
