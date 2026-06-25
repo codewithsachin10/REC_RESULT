@@ -1,6 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/server-admin";
+import { createClient } from "@/lib/supabase/server";
 
 type StudentInput = {
   name: string;
@@ -15,6 +16,13 @@ type StudentInput = {
 
 export async function addStudentsAction(students: StudentInput[]) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (user?.user_metadata?.role !== 'faculty') {
+      throw new Error("Unauthorized: Only faculty can perform this action");
+    }
+
     const supabaseAdmin = createAdminClient();
     
     let successCount = 0;

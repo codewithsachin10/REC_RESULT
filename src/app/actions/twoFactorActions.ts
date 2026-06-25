@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
+import crypto from "crypto";
 
 // Toggle 2FA in the database
 export async function toggleTwoFactor(enabled: boolean) {
@@ -29,15 +30,34 @@ export async function toggleTwoFactor(enabled: boolean) {
 // Generate and send OTP via Telegram
 export async function sendTelegramOTP(chatId: string) {
   try {
+    const cookieStore = await cookies();
+    
+    // Rate Limiting: Prevent requesting an OTP more than once per 60 seconds
+    const lastRequest = cookieStore.get("telegram_otp_last_request")?.value;
+    if (lastRequest && Date.now() - parseInt(lastRequest) < 60000) {
+      return { success: false, error: "Please wait 60 seconds before requesting a new code." };
+    }
+
     // Generate a 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     
-    // Store OTP in a secure, HTTP-only cookie with a 5-minute expiration
-    const cookieStore = await cookies();
-    cookieStore.set("telegram_otp_hash", btoa(otp), {
+    // Hash the OTP securely
+    const secret = process.env.TELEGRAM_BOT_TOKEN || 'rec_portal_fallback_secret';
+    const hash = crypto.createHmac('sha256', secret).update(otp).digest('hex');
+    
+    // Store hashed OTP in a secure, HTTP-only cookie with a 5-minute expiration
+    cookieStore.set("telegram_otp_hash", hash, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       maxAge: 300, // 5 minutes
+      path: "/",
+    });
+    
+    // Set rate limit cookie
+    cookieStore.set("telegram_otp_last_request", Date.now().toString(), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 60, // 60 seconds
       path: "/",
     });
 
@@ -74,9 +94,10 @@ export async function verifyTelegramOTP(code: string) {
     return { success: false, error: "Code expired or not found. Please request a new one." };
   }
 
-  const storedOtp = atob(storedHash);
+  const secret = process.env.TELEGRAM_BOT_TOKEN || 'rec_portal_fallback_secret';
+  const inputHash = crypto.createHmac('sha256', secret).update(code).digest('hex');
 
-  if (code === storedOtp) {
+  if (inputHash === storedHash) {
     // Code is correct, set the verified cookie and delete the hash
     cookieStore.delete("telegram_otp_hash");
     cookieStore.set("telegram_2fa_verified", "true", {

@@ -9,7 +9,7 @@ export async function sendTelegramNotification(studentId: string, message: strin
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (user?.user_metadata?.role !== 'faculty') {
+    if (user?.user_metadata?.role !== 'faculty' && user?.id !== studentId) {
       return { success: false, error: "Unauthorized" };
     }
     
