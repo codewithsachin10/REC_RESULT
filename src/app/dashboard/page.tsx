@@ -166,7 +166,7 @@ export default function DashboardPage() {
   }, []);
 
   return (
-    <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-12 relative">
+    <div className="flex flex-col gap-8 max-w-7xl mx-auto pb-12 relative w-full overflow-hidden">
       
       {/* Welcome Toast Notification */}
       {showWelcome && (
@@ -259,7 +259,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Marquee Content */}
-          <div className="flex-1 overflow-hidden relative h-full flex items-center bg-amber-50">
+          <div className="flex-1 min-w-0 overflow-hidden relative h-full flex items-center bg-amber-50">
             {/* Gradient Mask for fading edges */}
             <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-amber-50 to-transparent z-10 pointer-events-none"></div>
             <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-amber-50 to-transparent z-10 pointer-events-none"></div>
