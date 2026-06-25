@@ -328,10 +328,10 @@ export default function DashboardPage() {
                 <span className="text-sm font-bold text-slate-500 block mb-5">{result.unit}</span>
                 
                 {userProfile && (
-                  <div className="flex items-center gap-2 mb-5 text-sm font-bold border-[3px] border-slate-900 px-3 py-1.5 rounded-lg bg-blue-50 text-slate-700 w-max">
-                    <span className="text-slate-900">{userProfile.name}</span>
-                    <span className="text-slate-400">•</span>
-                    <span className="text-blue-700">{userProfile.roll_number}</span>
+                  <div className="flex items-center flex-wrap gap-2 mb-5 text-sm font-bold border-[3px] border-slate-900 px-3 py-1.5 rounded-lg bg-blue-50 text-slate-700 w-fit max-w-full">
+                    <span className="text-slate-900 truncate max-w-full">{userProfile.name}</span>
+                    <span className="text-slate-400 shrink-0">•</span>
+                    <span className="text-blue-700 shrink-0">{userProfile.roll_number}</span>
                   </div>
                 )}
 
