@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Plus, Settings, Check, Trash2, ArrowLeft, FormInput, ListFilter, Edit3, Users, PowerOff, Power, PlusCircle, X, ExternalLink, Copy, Eye, EyeOff } from "lucide-react";
+import { Plus, Settings, Check, Trash2, ArrowLeft, FormInput, ListFilter, Edit3, Users, PowerOff, Power, PlusCircle, X, ExternalLink, Copy, Eye, EyeOff, QrCode } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +21,7 @@ export default function FormBuilderPage() {
   const [loading, setLoading] = useState(true);
   const [isBuilding, setIsBuilding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [qrFormId, setQrFormId] = useState<string | null>(null);
 
   // Builder State
   const [title, setTitle] = useState("");
@@ -444,6 +445,13 @@ export default function FormBuilderPage() {
                   <Copy className="w-4 h-4" />
                 </button>
                 <button 
+                  onClick={() => setQrFormId(form.id)}
+                  className="w-10 h-10 bg-emerald-100 border-[3px] border-slate-900 rounded-xl flex items-center justify-center text-emerald-900 hover:bg-emerald-200 transition-colors shrink-0"
+                  title="Show QR Code"
+                >
+                  <QrCode className="w-4 h-4" />
+                </button>
+                <button 
                   onClick={() => handleEdit(form)}
                   className="w-10 h-10 bg-amber-100 border-[3px] border-slate-900 rounded-xl flex items-center justify-center text-amber-900 hover:bg-amber-200 transition-colors shrink-0"
                   title="Edit Form"
@@ -479,6 +487,44 @@ export default function FormBuilderPage() {
           ))}
         </div>
       )}
+
+      {/* QR Code Modal */}
+      {qrFormId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl w-full max-w-sm shadow-[8px_8px_0_0_#0f172a] border-[3px] border-slate-900 overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 relative">
+            <button 
+              onClick={() => setQrFormId(null)}
+              className="absolute top-4 right-4 p-2 bg-slate-100 hover:bg-slate-200 rounded-full transition-colors border-2 border-slate-900"
+            >
+              <X className="h-5 w-5 text-slate-900" />
+            </button>
+            <div className="p-8 flex flex-col items-center text-center">
+              <h3 className="text-2xl font-black text-slate-900 mb-2">Form QR Code</h3>
+              <p className="text-slate-500 font-bold mb-6 text-sm">Scan this code to quickly access the form on any mobile device.</p>
+              
+              <div className="bg-white p-4 border-[3px] border-slate-900 rounded-2xl shadow-[4px_4px_0_0_#0f172a] mb-6">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img 
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : ''}/forms/${qrFormId}`)}`}
+                  alt="Form QR Code"
+                  className="w-48 h-48"
+                />
+              </div>
+              
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(`${window.location.origin}/forms/${qrFormId}`);
+                  alert("Link copied to clipboard!");
+                }}
+                className="w-full px-4 py-3 bg-blue-600 text-white font-black rounded-xl border-[3px] border-slate-900 shadow-[4px_4px_0_0_#0f172a] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_0_#0f172a] transition-all flex items-center justify-center gap-2"
+              >
+                <Copy className="h-4 w-4" /> Copy Link Instead
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
